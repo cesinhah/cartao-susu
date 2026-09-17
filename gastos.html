@@ -117,6 +117,7 @@
       <input type="checkbox" id="showSuelen">
       <span>Incluir gastos da <b>Suelen</b></span>
     </label>
+    <a href="suelen.html" style="background:#5a2d8a;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;text-decoration:none;font-weight:600">Painel da Suelen</a>
   </header>
 
   <section class="kpis" id="kpis"></section>
@@ -186,6 +187,7 @@ window.DATA = [{"month":"Set/2025","emissao":"18/09/2025","total_fatura":14046.1
 </script>
 <script>
 (function(){
+  if (localStorage.getItem('cartao-auth') !== '1') { location.replace('index.html'); return; }
   const DATA = window.DATA;
   const months = DATA;
 

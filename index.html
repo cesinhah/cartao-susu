@@ -3,23 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cartão Susu</title>
+<title>Cartão — Acesso</title>
 <style>
-  body{background:#0b0f17;color:#e8edf5;font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center}
-  .wrap{padding:30px}
-  h1{font-size:26px;margin-bottom:8px}
-  p{color:#8b98ad;margin-bottom:26px}
-  a{display:block;text-decoration:none;color:#fff;background:#2a3850;border:1px solid #232e42;padding:14px 20px;border-radius:10px;margin:10px auto;max-width:320px;font-size:14px}
-  a.purple{background:#5a2d8a;border-color:#6a3ba0}
-  a:hover{filter:brightness(1.15)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0b0f17;color:#e8edf5;font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  .box{background:#131a26;border:1px solid #232e42;border-radius:16px;padding:32px;width:100%;max-width:340px;text-align:center}
+  .emoji{font-size:38px;margin-bottom:8px}
+  h1{font-size:22px;font-weight:700;margin-bottom:4px}
+  p{color:#8b98ad;font-size:13px;margin-bottom:22px}
+  input{width:100%;padding:12px 14px;background:#1a2333;border:1px solid #232e42;border-radius:9px;color:#e8edf5;font-size:15px;outline:none}
+  input:focus{border-color:#b06cf5}
+  button{width:100%;margin-top:12px;padding:12px;background:#5a2d8a;border:none;border-radius:9px;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+  button:hover{filter:brightness(1.15)}
+  .err{color:#ef5b6b;font-size:12px;margin-top:10px;min-height:16px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>💳 Cartão</h1>
-  <p>Painéis de gastos das faturas Itaú (Set/2025 → Ago/2026)</p>
-  <a href="suelen.html">Gastos da Suelen</a>
-  <a class="purple" href="gastos.html">Overview geral (sem Suelen)</a>
-</div>
+  <form class="box" id="form">
+    <div class="emoji">💳</div>
+    <h1>Cartão Susu</h1>
+    <p>Digite a senha para acessar os painéis</p>
+    <input type="password" id="pw" placeholder="Senha" autofocus>
+    <button type="submit">Entrar</button>
+    <div class="err" id="err"></div>
+  </form>
+  <script>
+    const SENHA = 'susu123';
+    document.getElementById('form').addEventListener('submit', function(e){
+      e.preventDefault();
+      if (document.getElementById('pw').value === SENHA) {
+        localStorage.setItem('cartao-auth', '1');
+        location.href = 'suelen.html';
+      } else {
+        document.getElementById('err').textContent = 'Senha incorreta';
+        document.getElementById('pw').value = '';
+      }
+    });
+  </script>
 </body>
 </html>

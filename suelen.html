@@ -18,7 +18,7 @@
   h1{font-size:26px;font-weight:700;letter-spacing:-.3px}
   h1 .dot{color:var(--accent)}
   .sub{color:var(--muted);font-size:13px;margin-top:4px}
-  .tag{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:8px 14px;border-radius:10px}
+  .tag{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:8px 14px;border-radius:10px;text-decoration:none}
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
   .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
   .kpi .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
@@ -108,7 +108,7 @@
       <h1>Gastos da Suelen<span class="dot">.</span></h1>
       <div class="sub">Set/2025 → Ago/2026 · cartão adicional · apenas gastos da Suelen</div>
     </div>
-    <span class="tag">Só Suelen</span>
+    <a class="tag" href="gastos.html">Overview geral →</a>
   </header>
 
   <section class="kpis" id="kpis"></section>
@@ -179,6 +179,7 @@ window.DATA = [{"month":"Set/2025","emissao":"18/09/2025","total_fatura":4385.5,
 </script>
 <script>
 (function(){
+  if (localStorage.getItem('cartao-auth') !== '1') { location.replace('index.html'); return; }
   const DATA = window.DATA;
   const months = DATA;
 
