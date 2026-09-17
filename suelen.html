@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gastos da Suelen — Overview</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#131a26; --panel2:#1a2333; --line:#232e42;
+    --text:#e8edf5; --muted:#8b98ad; --accent:#b06cf5; --accent2:#22c58b;
+    --warn:#f2a33c; --danger:#ef5b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;padding:24px;line-height:1.45}
+  .wrap{max-width:1180px;margin:0 auto}
+  header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:22px}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.3px}
+  h1 .dot{color:var(--accent)}
+  .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .tag{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:8px 14px;border-radius:10px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .kpi .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .kpi .value{font-size:26px;font-weight:700;margin-top:6px;letter-spacing:-.5px}
+  .kpi .hint{font-size:12px;color:var(--muted);margin-top:4px}
+  .kpi.accent .value{color:var(--accent2)}
+  .kpi.warn .value{color:var(--warn)}
+  .kpi.purple .value{color:var(--accent)}
+  .grid{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:22px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text)}
+  .card h2 small{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
+  .chartbox{position:relative;height:260px}
+  .chartbox.tall{height:300px}
+  .chartbox.short{height:220px}
+  .full{grid-column:1/-1}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .toolbar input,.toolbar select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;outline:none}
+  .toolbar input:focus,.toolbar select:focus{border-color:var(--accent)}
+  .toolbar input{flex:1;min-width:200px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap}
+  thead th:hover{color:var(--text)}
+  tbody td{padding:9px 12px;border-bottom:1px solid #1b2433;white-space:nowrap}
+  tbody tr:hover{background:#161f2e}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .pos{color:var(--accent2)} .neg{color:var(--danger)}
+  .cat{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;background:#1c2740;color:#c9a8f5}
+  .badge{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;background:#241d36;color:#c9a8f5}
+  .holder{font-size:12px;color:var(--muted)}
+  .count{color:var(--muted);font-size:12px;margin-top:8px}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+  footer{color:var(--muted);font-size:12px;margin-top:20px;text-align:center}
+  .list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;padding-right:4px}
+  .list::-webkit-scrollbar{width:8px}
+  .list::-webkit-scrollbar-thumb{background:#2a3850;border-radius:4px}
+  .item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;cursor:pointer;border:1px solid transparent;transition:background .12s,border .12s}
+  .item:hover{background:#161f2e}
+  .item.active{background:#1b2740;border-color:var(--accent)}
+  .item .name{flex:0 0 34%;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .barwrap{flex:1;height:8px;background:#1c2740;border-radius:4px;overflow:hidden}
+  .item .barfill{height:100%;border-radius:4px;background:var(--accent)}
+  .item .val{flex:0 0 auto;font-size:13px;font-variant-numeric:tabular-nums;text-align:right;min-width:86px}
+  .item .pct{flex:0 0 44px;font-size:11px;color:var(--muted);text-align:right}
+  .item .rank{flex:0 0 22px;font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+  .item .cnt{flex:0 0 40px;font-size:11px;color:var(--muted);text-align:right}
+  .detail{margin-bottom:22px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:none}
+  .detail .dhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .detail h2{font-size:16px;font-weight:600}
+  .detail .close{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+  .detail .close:hover{color:var(--text)}
+  .dsum{font-size:13px;color:var(--muted);margin-bottom:10px}
+  .dsum b{color:var(--text)}
+  @media(max-width:860px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .grid,.grid2{grid-template-columns:1fr}
+    table{font-size:12px}
+    .item .name{flex-basis:28%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Gastos da Suelen<span class="dot">.</span></h1>
+      <div class="sub">Set/2025 → Ago/2026 · cartão adicional · apenas gastos da Suelen</div>
+    </div>
+    <span class="tag">Só Suelen</span>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Gasto mensal <small>R$</small></h2>
+      <div class="chartbox tall"><canvas id="chartMonthly"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Por categoria <small>12 meses</small></h2>
+      <div class="chartbox tall"><canvas id="chartCat"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>Categorias <small>clique para ver por mês</small></h2>
+      <div class="list" id="catList"></div>
+    </div>
+    <div class="card">
+      <h2>Por cartão <small>final do cartão</small></h2>
+      <div class="chartbox"><canvas id="chartHolder"></canvas></div>
+      <h2 style="margin-top:18px">Onde mais gastou <small>clique para ver por mês</small></h2>
+      <div class="list" id="topList"></div>
+    </div>
+  </section>
+
+  <section class="detail" id="detail">
+    <div class="dhead">
+      <h2 id="detailTitle"></h2>
+      <button class="close" id="detailClose">✕ limpar</button>
+    </div>
+    <div class="dsum" id="detailSum"></div>
+    <div class="chartbox short"><canvas id="chartDetail"></canvas></div>
+  </section>
+
+  <section class="card full">
+    <h2>Transações <small id="txCount"></small></h2>
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Buscar estabelecimento...">
+      <select id="fMonth"><option value="">Todos os meses</option></select>
+      <select id="fCat"><option value="">Todas as categorias</option></select>
+      <select id="fCard"><option value="">Todos os cartões</option></select>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="date">Data</th>
+            <th data-sort="estab">Estabelecimento</th>
+            <th data-sort="category">Categoria</th>
+            <th data-sort="final">Cartão</th>
+            <th data-sort="value" class="num">Valor</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="count" id="sumRow"></div>
+  </section>
+
+  <footer>Dados extraídos das faturas Itaú (PDF). Apenas transações do cartão adicional da Suelen.</footer>
+</div>
+
+<script>
+window.DATA = [{"month":"Set/2025","emissao":"18/09/2025","total_fatura":4385.5,"total_suelen":4385.5,"total_sem_suelen":4385.5,"n_tx":25,"transactions":[{"date":"29/04","estab":"DRA VITORIA COSTA 05/10","value":400.0,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"05/05","estab":"INSTITUTO GRIS    05/10","value":361.7,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/05","estab":"55340901Lindomar  04/05","value":343.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"02/06","estab":"HOTEL REFUGIO DA M04/05","value":334.86,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/08","estab":"PS ALUGUEL DE MAQUINA","value":16.49,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/08","estab":"PS ALUGUEL DE MAQUINA","value":16.5,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/08","estab":"DRA. DANIELA PEREI01/10","value":1095.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/08","estab":"APPLE.COM/BILL","value":129.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/08","estab":"DM          *Spotify","value":21.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"27/08","estab":"PS ALUGUEL DE MAQUINA","value":16.49,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"04/09","estab":"PS ALUGUEL DE MAQUINA","value":16.5,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"04/09","estab":"PS ALUGUEL DE MAQUINA","value":16.49,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"07/09","estab":"UBER* TRIP","value":25.01,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"12/09","estab":"JENILU FLORES E PR01/03","value":133.34,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"PS ALUGUEL DE MAQUINA","value":16.5,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"PS ALUGUEL DE MAQUINA","value":16.49,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"UBER* TRIP","value":16.44,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKA01/10","value":511.14,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"16/09","estab":"PS ALUGUEL DE MAQUINA","value":16.5,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"16/09","estab":"PS ALUGUEL DE MAQUINA","value":16.49,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"16/09","estab":"APPLE.COM/BILL","value":119.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"19/05","estab":"AIRBNB * HMJWHJHWC04/04","value":637.72,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"1111","group":"Suelen"},{"date":"20/08","estab":"APPLE.COM/BILL","value":12.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"07/09","estab":"APPLE.COM/BILL","value":66.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"04/09","estab":"Wolt","value":27.34,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"}]},{"month":"Out/2025","emissao":"18/10/2025","total_fatura":7194.32,"total_suelen":7194.32,"total_sem_suelen":7194.32,"n_tx":21,"transactions":[{"date":"29/04","estab":"DRA VITORIA COSTA 06/10","value":400.0,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"05/05","estab":"INSTITUTO GRIS    06/10","value":361.7,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/05","estab":"55340901Lindomar  05/05","value":343.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"02/06","estab":"HOTEL REFUGIO DA M05/05","value":334.86,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/08","estab":"DRA. DANIELA PEREI02/10","value":1095.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"12/09","estab":"JENILU FLORES E PR02/03","value":133.34,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"12/09","estab":"JENILU FLORES E PRESEN","value":-0.02,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKA02/10","value":511.14,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKAI MA","value":-0.27,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"19/09","estab":"PS ALUGUEL DE MAQUINA","value":16.5,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"19/09","estab":"PS ALUGUEL DE MAQUINA","value":16.49,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"19/09","estab":"BRAZ SUSHI LTDA","value":251.4,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"19/09","estab":"HOTEL FAIAL       01/02","value":225.57,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/09","estab":"APPLE.COM/BILL","value":6.5,"category":"Hobby","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/09","estab":"RaiaDrogasilSA    01/03","value":108.84,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/09","estab":"ENERGIA NATURAL","value":179.7,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/09","estab":"HOTEL FAIAL","value":21.0,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/09","estab":"DM          *Spotify","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/09","estab":"APPLE.COM/BILL","value":12.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"30/09","estab":"Ingresse          01/03","value":3085.87,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"07/10","estab":"APPLE.COM/BILL","value":66.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"}]},{"month":"Nov/2025","emissao":"18/11/2025","total_fatura":7054.01,"total_suelen":7054.01,"total_sem_suelen":7054.01,"n_tx":28,"transactions":[{"date":"29/04","estab":"DRA VITORIA COSTA 07/10","value":400.0,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"05/05","estab":"INSTITUTO GRIS    07/10","value":361.7,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/08","estab":"DRA. DANIELA PEREI03/10","value":1095.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"12/09","estab":"JENILU FLORES E PR03/03","value":133.34,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKA03/10","value":511.14,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"19/09","estab":"HOTEL FAIAL       02/02","value":225.57,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"19/09","estab":"HOTEL FAIAL","value":-0.01,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/09","estab":"RaiaDrogasilSA    02/03","value":108.84,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"18/10","estab":"APPLE.COM/BILL","value":1.5,"category":"Hobby","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/10","estab":"APPLE.COM/BILL","value":32.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/10","estab":"APPLE.COM/BILL","value":99.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/10","estab":"DM          *Spotify","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"14/11","estab":"WI-FI ONBOARD GLO","value":25.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"14/11","estab":"CRFF PIZZARIA E REST","value":28.5,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"14/11","estab":"AEROMATE 1","value":19.9,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/11","estab":"WI-FI ONBOARD GLO","value":-25.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"16/11","estab":"UBER* TRIP","value":28.93,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"30/09","estab":"Ingresse          02/03","value":3085.87,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"20/10","estab":"APPLE.COM/BILL","value":12.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"07/11","estab":"APPLE.COM/BILL","value":66.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"29/10","estab":"UBR* PENDING.UBER.COM","value":46.81,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"04/11","estab":"Wolt","value":26.62,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/11","estab":"THE BRIDGE BAR 1960","value":321.26,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/11","estab":"WH Smith Heathrow T3","value":2.96,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/11","estab":"WH Smith Heathrow T3","value":28.34,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/11","estab":"BOLT.EUO2511112044","value":339.37,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/11","estab":"FOOD FOR FLIGHT","value":30.52,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/11","estab":"SEGAFREDO","value":21.35,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"}]},{"month":"Dez/2025","emissao":"18/12/2025","total_fatura":6752.35,"total_suelen":6752.35,"total_sem_suelen":6752.35,"n_tx":26,"transactions":[{"date":"29/04","estab":"DRA VITORIA COSTA 08/10","value":400.0,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"05/05","estab":"INSTITUTO GRIS    08/10","value":361.7,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/08","estab":"DRA. DANIELA PEREI04/10","value":1095.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKA04/10","value":511.14,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/09","estab":"RaiaDrogasilSA    03/03","value":108.84,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"19/11","estab":"Hotel at Booking.com","value":333.4,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/11","estab":"PS ALUGUEL DE MAQUINA","value":16.5,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/11","estab":"PS ALUGUEL DE MAQUINA","value":16.5,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"24/11","estab":"Uber UBER *TRIP HELP.U","value":184.97,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"24/11","estab":"Uber UBER *TRIP HELP.U","value":10.0,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/11","estab":"Uber UBER *TRIP HELP.U","value":29.99,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/11","estab":"UBER* TRIP","value":40.0,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/11","estab":"DM          *Spotify","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/11","estab":"UBER* TRIP","value":33.99,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/11","estab":"Uber UBER *TRIP HELP.U","value":30.99,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"27/11","estab":"UBER* TRIP","value":214.91,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"28/11","estab":"UBER* TRIP","value":7.87,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"28/11","estab":"UBER* TRIP","value":8.55,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"03/12","estab":"APPLE.COM/BILL","value":79.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"08/12","estab":"PS ALUGUEL DE MAQUINA","value":16.5,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"08/12","estab":"PS ALUGUEL DE MAQUINA","value":16.49,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"11/12","estab":"AV SETE DE SETEMBRO","value":19.0,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"30/09","estab":"Ingresse          03/03","value":3085.87,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"20/11","estab":"APPLE.COM/BILL","value":12.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"07/12","estab":"APPLE.COM/BILL","value":66.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"04/12","estab":"Wolt","value":26.54,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"}]},{"month":"Jan/2026","emissao":"18/01/2026","total_fatura":4704.45,"total_suelen":4704.45,"total_sem_suelen":4704.45,"n_tx":34,"transactions":[{"date":"29/04","estab":"DRA VITORIA COSTA 09/10","value":400.0,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"05/05","estab":"INSTITUTO GRIS    09/10","value":361.7,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/08","estab":"DRA. DANIELA PEREI05/10","value":1095.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKA05/10","value":511.14,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"18/12","estab":"HAVAIANAS         01/05","value":86.4,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"18/12","estab":"HAVAIANAS","value":-0.12,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/12","estab":"QUANTA COISA UTILI01/03","value":71.3,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/12","estab":"UNIBOX DINARDELLI COME","value":139.19,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"24/12","estab":"GENERAL LYY       01/03","value":101.64,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"24/12","estab":"CHOUPANA INDUSTRIA01/02","value":119.5,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/12","estab":"DM          *Spotify","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"27/12","estab":"APPLE.COM/BILL","value":64.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"03/01","estab":"APPLE.COM/BILL","value":79.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"04/01","estab":"CAIF ESTACIONAMENTO NO","value":22.0,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"09/01","estab":"QuintalButia","value":48.0,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"09/01","estab":"IFD*IFOOD CLUB","value":7.98,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"10/01","estab":"IFD*GOLDEN SUSHI DELIV","value":263.4,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"11/01","estab":"Anderson","value":154.7,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"12/01","estab":"UNIBOX DINARDELLI COME","value":26.16,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/01","estab":"DAISO BRASIL COMERCIO","value":64.97,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/01","estab":"ESTRELA DO ORIENTE","value":80.0,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/01","estab":"COOPER","value":125.12,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"14/01","estab":"POSTO ZANDONA 12","value":22.99,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"14/01","estab":"CASA FEIJUCA 2","value":55.0,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"14/01","estab":"JIM.COM* ANNE CAROLIN","value":340.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/01","estab":"CLEBERPIVOTTOTATTOO","value":158.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"16/01","estab":"COOPER FILIAL ITOUPAVA","value":51.75,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"17/01","estab":"COMERCIAL D'CASA","value":47.28,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"17/01","estab":"COMERCIAL D'CASA","value":8.5,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"17/01","estab":"AUTO POSTO GASPAR","value":34.9,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"17/01","estab":"AUTO POSTO GASPAR","value":31.88,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/12","estab":"APPLE.COM/BILL","value":12.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"07/01","estab":"APPLE.COM/BILL","value":66.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"04/01","estab":"Wolt","value":27.57,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"}]},{"month":"Fev/2026","emissao":"18/02/2026","total_fatura":7489.43,"total_suelen":7489.43,"total_sem_suelen":7489.43,"n_tx":62,"transactions":[{"date":"29/04","estab":"DRA VITORIA COSTA 10/10","value":400.0,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"05/05","estab":"INSTITUTO GRIS    10/10","value":361.7,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/08","estab":"DRA. DANIELA PEREI06/10","value":1095.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKA06/10","value":511.14,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"18/12","estab":"HAVAIANAS         02/05","value":86.4,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/12","estab":"QUANTA COISA UTILI02/03","value":71.3,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/12","estab":"QUANTA COISA UTILIDADE","value":-0.02,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"24/12","estab":"GENERAL LYY       02/03","value":101.64,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"24/12","estab":"CHOUPANA INDUSTRIA02/02","value":119.5,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"24/12","estab":"GENERAL LYY","value":-0.02,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"18/01","estab":"YuzDistribuicao","value":150.0,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"18/01","estab":"VILLAS CONVENIENCIA E","value":92.99,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"19/01","estab":"PANVEL FILIAL 856","value":118.86,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"19/01","estab":"IFD*ROTHER E WEIRICH C","value":106.5,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/01","estab":"COMERCIAL D'CASA","value":30.74,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/01","estab":"LATAM AIR*0000    01/03","value":566.79,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/01","estab":"DON DEGAN   -CT","value":206.9,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/01","estab":"SUSHI DA VILA","value":68.76,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"HAVAIANAS","value":17.0,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"CHURRASCARIA TONI","value":80.0,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"LAVE E PEGUE BLUMENAU","value":17.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"LAVE E PEGUE BLUMENAU","value":17.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"LAVE E PEGUE BLUMENAU","value":17.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"HIPER SELECT SUPERMERC","value":294.72,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"GALO CR","value":24.98,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"GALO RT","value":200.0,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"POSTO FL 21","value":23.96,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"MONTEIRO GASTRONOMIC","value":175.84,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"FARMACIA AREIAS   01/03","value":101.53,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"FARMACIA PRECO POP01/05","value":60.88,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"NAS ONDAS OKA","value":93.5,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"NAS ONDAS OKA","value":36.3,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"BIAFARMA RIO TAVARES","value":146.78,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"GamesPeluciasE","value":10.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"GamesPeluciasE","value":5.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"GamesPeluciasE","value":5.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"GamesPeluciasE","value":10.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"GamesPeluciasE","value":10.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"MARCOS ANDRE DEVES URB","value":223.3,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/01","estab":"DUFRY DO BRASIL DUTY F","value":13.99,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/01","estab":"HIPER SELECT SUPERMERC","value":36.18,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/01","estab":"RAIA1732          01/03","value":91.42,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/01","estab":"CPMB LTDA","value":85.0,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/01","estab":"DM          *Spotify","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"03/02","estab":"APPLECOMBILL","value":79.9,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/01","estab":"APPLE.COM/BILL","value":12.9,"category":"Hobby","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"07/02","estab":"APPLECOMBILL","value":66.9,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"23/01","estab":"IMMFLY","value":103.1,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"24/01","estab":"Wolt","value":221.87,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/01","estab":"UBR* PENDING.UBER.COM","value":83.5,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"25/01","estab":"UBER   *TRIP","value":50.74,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/01","estab":"Wolt","value":111.3,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"27/01","estab":"UBR* PENDING.UBER.COM","value":140.0,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"31/01","estab":"TWENTY 4 SHOPEN","value":10.75,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"03/02","estab":"JD","value":15.01,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"04/02","estab":"Wolt","value":26.64,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"04/02","estab":"TWENTY 4 SHOPEN","value":49.73,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"06/02","estab":"Wolt","value":75.98,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"11/02","estab":"Wolt","value":118.14,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/02","estab":"Wolt","value":205.74,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/02","estab":"Wolt","value":128.48,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"16/02","estab":"Wolt","value":77.59,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"}]},{"month":"Mar/2026","emissao":"18/03/2026","total_fatura":3155.2,"total_suelen":3155.2,"total_sem_suelen":3155.2,"n_tx":19,"transactions":[{"date":"25/08","estab":"DRA. DANIELA PEREI07/10","value":1095.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKA07/10","value":511.14,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"18/12","estab":"HAVAIANAS         03/05","value":86.4,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/12","estab":"QUANTA COISA UTILI03/03","value":71.3,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"24/12","estab":"GENERAL LYY       03/03","value":101.64,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/01","estab":"LATAM AIR*0000    02/03","value":566.79,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"FARMACIA AREIAS   02/03","value":101.53,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"FARMACIA PRECO POP02/05","value":60.88,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"FARMACIA AREIAS","value":-0.02,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/01","estab":"RAIA1732          02/03","value":91.42,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/01","estab":"RAIA1732","value":-0.02,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/02","estab":"DM          *Spotify","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"03/03","estab":"APPLECOMBILL","value":79.9,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"09/03","estab":"APPLECOMBILL","value":39.9,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/02","estab":"APPLECOMBILL","value":12.9,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"07/03","estab":"APPLECOMBILL","value":66.9,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"26/02","estab":"Wolt","value":102.21,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/02","estab":"Wolt","value":100.25,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"04/03","estab":"BOLT.EUO2603040951","value":43.18,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"}]},{"month":"Abr/2026","emissao":"18/04/2026","total_fatura":3296.8,"total_suelen":3296.8,"total_sem_suelen":3296.8,"n_tx":17,"transactions":[{"date":"25/08","estab":"DRA. DANIELA PEREI08/10","value":1095.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKA08/10","value":511.14,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"18/12","estab":"HAVAIANAS         04/05","value":86.4,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/01","estab":"LATAM AIR*0000    03/03","value":566.79,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"FARMACIA AREIAS   03/03","value":101.53,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"FARMACIA PRECO POP03/05","value":60.88,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/01","estab":"RAIA1732          03/03","value":91.42,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/03","estab":"JIM.COM* CW GRIFFE01/10","value":500.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/03","estab":"EBN         *SPOTIFY","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/03","estab":"Google ADS5897423393","value":-40.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"1111","group":"Suelen"},{"date":"01/04","estab":"Google ADS8377424611","value":-40.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"1111","group":"Suelen"},{"date":"01/04","estab":"Google ADS8924151095","value":-40.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"1111","group":"Suelen"},{"date":"21/03","estab":"APPLECOMBILL","value":12.9,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"03/04","estab":"APPLECOMBILL","value":79.9,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"07/04","estab":"APPLECOMBILL","value":66.9,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"5754","group":"Suelen"},{"date":"18/03","estab":"Wolt","value":65.53,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"18/03","estab":"Wolt","value":154.51,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"}]},{"month":"Mai/2026","emissao":"18/05/2026","total_fatura":2762.45,"total_suelen":2762.45,"total_sem_suelen":2762.45,"n_tx":13,"transactions":[{"date":"25/08","estab":"DRA. DANIELA PEREI09/10","value":1095.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKA09/10","value":511.14,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"18/12","estab":"HAVAIANAS         05/05","value":86.4,"category":"Vestuário","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"FARMACIA PRECO POP04/05","value":60.88,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/03","estab":"JIM.COM* CW GRIFFE02/10","value":500.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/04","estab":"DM*Spotify","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"30/04","estab":"APPLE.COM/BILL.","value":49.99,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"14/05","estab":"Google ADS1102195082","value":-0.66,"category":"Diversos","holder":"SUELEN S MACHADO","final":"1111","group":"Suelen"},{"date":"20/04","estab":"Wolt","value":25.35,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"30/04","estab":"Wolt","value":107.61,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"03/05","estab":"Wolt","value":189.02,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"04/05","estab":"Wolt","value":88.78,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"04/05","estab":"Wolt","value":25.04,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"}]},{"month":"Jun/2026","emissao":"18/06/2026","total_fatura":2433.66,"total_suelen":2433.66,"total_sem_suelen":2433.66,"n_tx":12,"transactions":[{"date":"25/08","estab":"DRA. DANIELA PEREI10/10","value":1095.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"15/09","estab":"GRUPO TAKAI - TAKA10/10","value":511.14,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"22/01","estab":"FARMACIA PRECO POP05/05","value":60.88,"category":"Saúde","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/03","estab":"JIM.COM* CW GRIFFE03/10","value":500.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/05","estab":"ESBELA COMER-CT DE PRO","value":21.8,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/05","estab":"FOOD ITALIA -CT PORTO","value":90.0,"category":"Alimentação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/05","estab":"CAIF ESTACIO-CT NTO NO","value":24.0,"category":"Turismo e Entretenimento","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/05","estab":"AUTO POSTO S-CT RAZ","value":19.99,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/05","estab":"APOLO FILIAL-CT","value":8.99,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"21/05","estab":"APOLO FILIAL-CT","value":23.98,"category":"Veículos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/05","estab":"DM*Spotify","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"20/05","estab":"Bistrot Luku-CT s","value":53.98,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"}]},{"month":"Jul/2026","emissao":"18/07/2026","total_fatura":1074.32,"total_suelen":1074.32,"total_sem_suelen":1074.32,"n_tx":3,"transactions":[{"date":"21/03","estab":"JIM.COM* CW GRIFFE04/10","value":500.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/06","estab":"DM*Spotify","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/07","estab":"PG *GOEXPLOSION LT01/05","value":550.42,"category":"Educação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"}]},{"month":"Ago/2026","emissao":"18/08/2026","total_fatura":2218.72,"total_suelen":2218.72,"total_sem_suelen":2218.72,"n_tx":7,"transactions":[{"date":"21/03","estab":"JIM.COM* CW GRIFFE05/10","value":500.0,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"13/07","estab":"PG *GOEXPLOSION LT02/05","value":550.42,"category":"Educação","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"26/07","estab":"DM*Spotify","value":23.9,"category":"Diversos","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"10/08","estab":"HOPPER *TRAVEL","value":1396.71,"category":"Outros","holder":"SUELEN S MACHADO","final":"0747","group":"Suelen"},{"date":"23/07","estab":"BKG*HOTEL AT BOOKING.C","value":7895.37,"category":"Outros","holder":"SUELEN S MACHADO","final":"0973","group":"Suelen"},{"date":"24/07","estab":"BKG*HOTEL AT BOOKING.C","value":-7872.15,"category":"Outros","holder":"SUELEN S MACHADO","final":"0973","group":"Suelen"},{"date":"25/07","estab":"ESTORNO CUSTO DE IOF","value":-275.53,"category":"Outros","holder":"SUELEN S MACHADO","final":"0973","group":"Suelen"}]}];
+</script>
+<script>
+(function(){
+  const DATA = window.DATA;
+  const months = DATA;
+
+  const fmt = n => n.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+  const fmtBRL = n => 'R$ ' + fmt(n);
+
+  function allTx(){
+    let out=[];
+    months.forEach(m => m.transactions.forEach(t => out.push({...t, month:m.month})));
+    return out;
+  }
+
+  function renderKpis(){
+    const tx = allTx();
+    const total = tx.reduce((s,t)=>s+t.value,0);
+    const avg = total/months.length;
+    const byMonth = months.map(m=>({m:m.month, v:m.total_suelen}));
+    const maxM = [...byMonth].sort((a,b)=>b.v-a.v)[0];
+    document.getElementById('kpis').innerHTML = `
+      <div class="kpi accent"><div class="label">Total gasto (12 meses)</div><div class="value">${fmtBRL(total)}</div><div class="hint">${tx.length} transações</div></div>
+      <div class="kpi purple"><div class="label">Média mensal</div><div class="value">${fmtBRL(avg)}</div><div class="hint">${months.length} faturas</div></div>
+      <div class="kpi warn"><div class="label">Maior mês</div><div class="value">${fmtBRL(maxM.v)}</div><div class="hint">${maxM.m}</div></div>
+      <div class="kpi"><div class="label">Cartões usados</div><div class="value" id="cardCount">—</div><div class="hint">finais do cartão adicional</div></div>
+    `;
+    const finals = [...new Set(tx.map(t=>t.final))].sort();
+    document.getElementById('cardCount').textContent = '·' + finals.join(' ·');
+  }
+
+  let cMonthly, cCat, cHolder, cDetail;
+  const COLORS = ['#4f8cff','#22c58b','#f2a33c','#ef5b6b','#b06cf5','#36c5d0','#e8a2d6','#8f9bb3','#7bc96f','#f7c948','#ff8fab','#9ad0f5'];
+
+  function renderMonthly(){
+    const labels = months.map(m=>m.month);
+    const data = months.map(m=>m.total_fatura);
+    if(cMonthly) cMonthly.destroy();
+    cMonthly = new Chart(document.getElementById('chartMonthly'),{
+      type:'bar',
+      data:{labels, datasets:[{label:'Suelen', data, backgroundColor:'#b06cf5', borderRadius:5}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:'#8b98ad'},grid:{display:false}}, y:{ticks:{color:'#8b98ad',callback:v=>'R$ '+v.toLocaleString('pt-BR')},grid:{color:'#1b2433'}}}}
+    });
+  }
+
+  function renderCat(){
+    const tx = allTx();
+    const agg = {};
+    tx.forEach(t=>{ agg[t.category]=(agg[t.category]||0)+t.value; });
+    const entries = Object.entries(agg).sort((a,b)=>b[1]-a[1]);
+    if(cCat) cCat.destroy();
+    cCat = new Chart(document.getElementById('chartCat'),{
+      type:'doughnut',
+      data:{labels:entries.map(e=>e[0]), datasets:[{data:entries.map(e=>e[1]), backgroundColor:COLORS, borderColor:'#131a26', borderWidth:2}]},
+      options:{responsive:true, maintainAspectRatio:false, cutout:'62%',
+        plugins:{legend:{position:'right', labels:{color:'#e8edf5', boxWidth:12, font:{size:11}}}}}
+    });
+  }
+
+  function renderHolder(){
+    const tx = allTx();
+    const agg = {};
+    tx.forEach(t=>{ const k = 'Cartão ·'+(t.final||'?'); agg[k]=(agg[k]||0)+t.value; });
+    const entries = Object.entries(agg).sort((a,b)=>b[1]-a[1]);
+    if(cHolder) cHolder.destroy();
+    cHolder = new Chart(document.getElementById('chartHolder'),{
+      type:'bar',
+      data:{labels:entries.map(e=>e[0]), datasets:[{data:entries.map(e=>e[1]), backgroundColor:'#b06cf5', borderRadius:5}]},
+      options:{responsive:true, maintainAspectRatio:false, indexAxis:'y',
+        plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:'#8b98ad',callback:v=>'R$ '+v.toLocaleString('pt-BR')},grid:{color:'#1b2433'}}, y:{ticks:{color:'#e8edf5'},grid:{display:false}}}}
+    });
+  }
+
+  function catAgg(){
+    const tx = allTx();
+    const agg = {}; tx.forEach(t=>{ agg[t.category]=(agg[t.category]||0)+t.value; });
+    const total = Object.values(agg).reduce((s,v)=>s+v,0);
+    return Object.entries(agg).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({name:k,value:v,pct:total?v/total*100:0}));
+  }
+  function estabAgg(){
+    const tx = allTx();
+    const agg = {}; tx.forEach(t=>{ const k=(t.estab||'').trim()||'(sem nome)'; if(!agg[k]) agg[k]={value:0,count:0}; agg[k].value+=t.value; agg[k].count++; });
+    return Object.entries(agg).sort((a,b)=>b[1].value-a[1].value).map(([k,v])=>({name:k,value:v.value,count:v.count}));
+  }
+
+  function renderCatList(){
+    const data = catAgg();
+    const max = data[0]?data[0].value:1;
+    document.getElementById('catList').innerHTML = data.map((d,i)=>`
+      <div class="item" data-type="cat" data-key="${escAttr(d.name)}">
+        <span class="name">${esc(d.name)}</span>
+        <span class="barwrap"><span class="barfill" style="width:${(d.value/max*100).toFixed(1)}%;background:${COLORS[i%COLORS.length]}"></span></span>
+        <span class="val">${fmtBRL(d.value)}</span><span class="pct">${d.pct.toFixed(1)}%</span>
+      </div>`).join('');
+  }
+  function renderTopList(){
+    const data = estabAgg().slice(0,20);
+    const max = data[0]?data[0].value:1;
+    document.getElementById('topList').innerHTML = data.map((d,i)=>`
+      <div class="item" data-type="estab" data-key="${escAttr(d.name)}">
+        <span class="rank">${i+1}</span>
+        <span class="name" title="${esc(d.name)}">${esc(d.name)}</span>
+        <span class="barwrap"><span class="barfill" style="width:${(d.value/max*100).toFixed(1)}%;background:#22c58b"></span></span>
+        <span class="val">${fmtBRL(d.value)}</span><span class="cnt">${d.count}x</span>
+      </div>`).join('');
+  }
+
+  let activeFilter = null;
+  function showDetail(type, key){
+    activeFilter = {type, key};
+    const tx = allTx().filter(t => type==='cat' ? t.category===key : (t.estab||'').trim()===key);
+    const byMonth = {}; months.forEach(m=>byMonth[m.month]=0);
+    tx.forEach(t=>{ byMonth[t.month]+=t.value; });
+    const labels = months.map(m=>m.month);
+    const data = months.map(m=>byMonth[m.month]);
+    const total = tx.reduce((s,t)=>s+t.value,0);
+    document.getElementById('detail').style.display='block';
+    document.getElementById('detailTitle').textContent = (type==='cat'?'Categoria: ':'') + key;
+    document.getElementById('detailSum').innerHTML = `<b>${fmtBRL(total)}</b> em ${tx.length} transações · gasto mês a mês:`;
+    if(cDetail) cDetail.destroy();
+    cDetail = new Chart(document.getElementById('chartDetail'),{
+      type:'bar', data:{labels, datasets:[{data, backgroundColor:'#b06cf5', borderRadius:5}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:'#8b98ad'},grid:{display:false}}, y:{ticks:{color:'#8b98ad',callback:v=>'R$ '+v.toLocaleString('pt-BR')},grid:{color:'#1b2433'}}}}
+    });
+    document.querySelectorAll('.item').forEach(el=>el.classList.toggle('active', el.dataset.type===type && el.dataset.key===key));
+    renderTable();
+    document.getElementById('detail').scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  function clearDetail(){
+    activeFilter=null; document.getElementById('detail').style.display='none';
+    if(cDetail){ cDetail.destroy(); cDetail=null; }
+    document.querySelectorAll('.item').forEach(el=>el.classList.remove('active'));
+    renderTable();
+  }
+
+  let sortKey='value', sortDir=-1;
+  function renderTable(){
+    let tx = allTx();
+    const q = document.getElementById('search').value.toLowerCase();
+    const fm = document.getElementById('fMonth').value;
+    const fc = document.getElementById('fCat').value;
+    const fr = document.getElementById('fCard').value;
+    if(q) tx = tx.filter(t=>(t.estab||'').toLowerCase().includes(q));
+    if(fm) tx = tx.filter(t=>t.month===fm);
+    if(fc) tx = tx.filter(t=>t.category===fc);
+    if(fr) tx = tx.filter(t=>t.final===fr);
+    if(activeFilter) tx = tx.filter(t => activeFilter.type==='cat' ? t.category===activeFilter.key : (t.estab||'').trim()===activeFilter.key);
+    tx.sort((a,b)=>{
+      let va=a[sortKey], vb=b[sortKey];
+      if(sortKey==='value'){ va=a.value; vb=b.value; }
+      if(sortKey==='date'){ const [da,ma]=a.date.split('/'); const [db,mb]=b.date.split('/'); va=ma*100+da*1; vb=mb*100+db*1; }
+      if(typeof va==='string'){ va=va.toLowerCase(); vb=vb.toLowerCase(); }
+      return (va<vb?-1:va>vb?1:0)*sortDir;
+    });
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = tx.map(t=>{
+      const vcls = t.value<0?'neg':'pos';
+      return `<tr><td>${t.date}</td><td>${esc(t.estab)}</td><td><span class="cat">${esc(t.category)}</span></td><td><span class="badge">·${esc(t.final)}</span></td><td class="num ${vcls}">${fmtBRL(t.value)}</td></tr>`;
+    }).join('');
+    const sum = tx.reduce((s,t)=>s+t.value,0);
+    document.getElementById('txCount').textContent = tx.length + ' resultados';
+    document.getElementById('sumRow').textContent = 'Soma da seleção: ' + fmtBRL(sum);
+  }
+  function esc(s){ return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function escAttr(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  function populateFilters(){
+    const mSel=document.getElementById('fMonth');
+    months.forEach(m=>{ const o=document.createElement('option'); o.value=m.month; o.textContent=m.month; mSel.appendChild(o); });
+    const cats=[...new Set(allTx().map(t=>t.category))].sort();
+    const cSel=document.getElementById('fCat');
+    cats.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; cSel.appendChild(o); });
+    const finals=[...new Set(allTx().map(t=>t.final))].sort();
+    const fSel=document.getElementById('fCard');
+    finals.forEach(f=>{ const o=document.createElement('option'); o.value=f; o.textContent='·'+f; fSel.appendChild(o); });
+  }
+
+  document.querySelectorAll('thead th').forEach(th=>{
+    th.addEventListener('click',()=>{ const k=th.dataset.sort;
+      if(sortKey===k) sortDir*=-1; else {sortKey=k; sortDir=(k==='value')?-1:1;} renderTable(); });
+  });
+  document.getElementById('search').addEventListener('input', renderTable);
+  document.getElementById('fMonth').addEventListener('change', renderTable);
+  document.getElementById('fCat').addEventListener('change', renderTable);
+  document.getElementById('fCard').addEventListener('change', renderTable);
+  document.getElementById('detailClose').addEventListener('click', clearDetail);
+  document.getElementById('catList').addEventListener('click', e=>{ const it=e.target.closest('.item'); if(it) showDetail('cat', it.dataset.key); });
+  document.getElementById('topList').addEventListener('click', e=>{ const it=e.target.closest('.item'); if(it) showDetail('estab', it.dataset.key); });
+
+  populateFilters();
+  renderKpis(); renderMonthly(); renderCat(); renderHolder(); renderCatList(); renderTopList(); renderTable();
+})();
+</script>
+</body>
+</html>
