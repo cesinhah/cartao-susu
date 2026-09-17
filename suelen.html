@@ -80,6 +80,25 @@
     table{font-size:12px}
     .item .name{flex-basis:28%}
   }
+  @media(max-width:620px){
+    body{padding:14px}
+    header{flex-direction:column;align-items:stretch;gap:10px}
+    h1{font-size:22px}
+    .tag{width:100%;text-align:center}
+    .kpis{grid-template-columns:1fr 1fr;gap:10px}
+    .kpi{padding:13px}
+    .kpi .value{font-size:19px}
+    .item .name{flex-basis:36%}
+    .item .pct{display:none}
+    .toolbar input,.toolbar select{flex:1 1 100%}
+    thead th:nth-child(4), tbody td:nth-child(4){display:none}
+    .chartbox.tall{height:250px}
+  }
+  @media(max-width:380px){
+    .kpis{grid-template-columns:1fr}
+    thead th:nth-child(3), tbody td:nth-child(3){display:none}
+    .item .name{flex-basis:auto}
+  }
 </style>
 </head>
 <body>
